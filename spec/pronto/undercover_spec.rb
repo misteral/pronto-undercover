@@ -11,7 +11,8 @@ RSpec.describe Pronto::Undercover do
       {
         'lcov' => 'coverage/lcov/fixtures.lcov',
         'path' => '.',
-        'ruby-syntax' => 'ruby22'
+        'ruby-syntax' => 'ruby22',
+        'min-coverage' => 1
       }
     end
     subject { Pronto::Undercover.new(patches) }
@@ -45,6 +46,12 @@ RSpec.describe Pronto::Undercover do
         expect(msg.level).to eq(:warning)
         expect(msg.line.new_lineno).to eq(10)
         expect(msg.runner).to eq(Pronto::Undercover)
+      end
+
+      it 'not report if coverage >= min_coverage' do
+        write_config('min-coverage' => 0.5)
+        results = Pronto.run(:staged, 'test.git', nil)
+        expect(results.size).to eq(1)
       end
 
       it 'passes options from .pronto.yml to Undercover::Report' do
@@ -95,9 +102,7 @@ RSpec.describe Pronto::Undercover do
   end
 
   def write_config(yaml_config_hash)
-    File.open('.pronto.yml', 'w') do |config_file|
-      config_file.write({'pronto-undercover' => yaml_config_hash}.to_yaml)
-    end
+    File.write('.pronto.yml', {'pronto-undercover' => yaml_config_hash}.to_yaml)
   end
 
   def delete_config
